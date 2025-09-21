@@ -5,8 +5,18 @@ Streamlit 版本 - Gemba巡厂PPT生成器
 将 Tkinter 桌面应用转换为 Web 应用
 """
 
-import streamlit as st
+# 🚨 Critical: Disable ALL GUI backends before any imports
 import os
+os.environ['MPLBACKEND'] = 'Agg'  # Disable matplotlib GUI backend
+os.environ['DISPLAY'] = ''        # Disable X11 display
+os.environ['QT_QPA_PLATFORM'] = 'offscreen'  # Disable Qt GUI
+os.environ['SDL_VIDEODRIVER'] = 'dummy'      # Disable SDL video
+
+# Disable pandas plotting backends that might trigger tkinter
+import warnings
+warnings.filterwarnings('ignore', category=UserWarning, module='.*')
+
+import streamlit as st
 import tempfile
 import zipfile
 from datetime import datetime

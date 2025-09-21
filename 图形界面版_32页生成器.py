@@ -1,16 +1,25 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-图形界面版32页PPT生成器 - 带文件选择对话框
+图形界面版32页PPT生成器 - Web部署兼容版本
 """
 
+# 🚨 Critical: Disable ALL GUI backends to prevent libtk8.6.so error
 import os
 import sys
+os.environ['MPLBACKEND'] = 'Agg'  # Disable matplotlib GUI backend
+os.environ['DISPLAY'] = ''        # Disable X11 display
+os.environ['QT_QPA_PLATFORM'] = 'offscreen'  # Disable Qt GUI
+os.environ['SDL_VIDEODRIVER'] = 'dummy'      # Disable SDL video
+
+# Disable pandas plotting backends that might trigger tkinter
+import warnings
+warnings.filterwarnings('ignore', category=UserWarning, module='.*')
+
 import json
 from datetime import datetime
 from pathlib import Path
 import re
-# tkinter imports removed for web deployment compatibility
 
 # 导入库
 from pptx import Presentation
