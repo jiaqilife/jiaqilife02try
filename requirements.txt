@@ -1,4 +1,6 @@
+streamlit>=1.28.0
 python-pptx==1.0.2
 pandas==2.3.2
 openpyxl==3.1.5
 pathlib2==2.3.7
+Pillow>=8.0.0
