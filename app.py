@@ -27,7 +27,34 @@ from pptx import Presentation
 from pptx.util import Inches
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 
-# Streamlit 配置将在main()函数中初始化
+# 页面配置 - 必须在文件开始就调用
+st.set_page_config(
+    page_title="Gemba巡厂PPT生成器",
+    page_icon="🏭",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# 样式设置
+st.markdown("""
+<style>
+.main-header {
+    background: linear-gradient(90deg, #1f77b4, #ff7f0e);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 3rem;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 2rem;
+}
+.upload-section {
+    background-color: #f0f2f6;
+    padding: 1rem;
+    border-radius: 10px;
+    margin: 1rem 0;
+}
+</style>
+""", unsafe_allow_html=True)
 
 def read_excel_data(excel_path):
     """从Excel文件动态读取数据，替代硬编码数据"""
@@ -421,35 +448,6 @@ def generate_ppt_streamlit(ppt_file, zip_file, output_filename):
 
 def main():
     """主函数 - Streamlit Web应用"""
-    
-    # 页面配置
-    st.set_page_config(
-        page_title="Gemba巡厂PPT生成器",
-        page_icon="🏭",
-        layout="wide",
-        initial_sidebar_state="expanded"
-    )
-    
-    # 样式设置
-    st.markdown("""
-    <style>
-    .main-header {
-        background: linear-gradient(90deg, #1f77b4, #ff7f0e);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-size: 3rem;
-        font-weight: bold;
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-    .upload-section {
-        background-color: #f0f2f6;
-        padding: 1rem;
-        border-radius: 10px;
-        margin: 1rem 0;
-    }
-    </style>
-    """, unsafe_allow_html=True)
     
     # 添加调试信息
     st.write("🚀 Streamlit 应用已启动")
