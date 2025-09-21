@@ -17,6 +17,7 @@ from tkinter import filedialog, messagebox
 from pptx import Presentation
 from pptx.util import Inches
 from pptx.enum.shapes import MSO_SHAPE_TYPE
+import pandas as pd  # 用于Excel读取
 
 # 配置文件路径
 CONFIG_FILE = "gemba_config.json"
@@ -116,8 +117,53 @@ def select_files():
         root.destroy()
         return None, None, None
 
-def get_all_31_rows():
-    """获取完整的31行Excel数据"""
+def read_excel_data(excel_path):
+    """从Excel文件动态读取数据，替代硬编码数据"""
+    try:
+        print(f"正在读取Excel文件: {excel_path}")
+        
+        # 使用pandas读取Excel文件
+        df = pd.read_excel(excel_path)
+        print(f"Excel文件读取成功，共 {len(df)} 行数据")
+        
+        # 数据验证：检查必需的列是否存在
+        required_columns = ["问题发现区域", "发现人", "问题收集", "问题分类"]
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        
+        if missing_columns:
+            print(f"警告：Excel文件缺少必需列: {missing_columns}")
+            # 使用默认值填充缺失列
+            for col in missing_columns:
+                df[col] = "未知"
+        
+        # 过滤空行和无效数据
+        df_cleaned = df.dropna(subset=["问题收集"]).copy()
+        print(f"清理后有效数据: {len(df_cleaned)} 行")
+        
+        # 转换为标准格式
+        data_list = []
+        for _, row in df_cleaned.iterrows():
+            data_row = {
+                "问题发现区域": str(row.get("问题发现区域", "未知")).strip(),
+                "发现人": str(row.get("发现人", "未知")).strip(),
+                "问题收集": str(row.get("问题收集", "")).strip(),
+                "问题分类": str(row.get("问题分类", "Others")).strip()
+            }
+            # 只添加非空的问题记录
+            if data_row["问题收集"]:
+                data_list.append(data_row)
+        
+        print(f"最终处理数据: {len(data_list)} 行")
+        return data_list
+        
+    except Exception as e:
+        print(f"读取Excel文件失败: {e}")
+        print("使用备用硬编码数据...")
+        # 发生错误时返回原有的硬编码数据作为备用
+        return get_all_31_rows_backup()
+
+def get_all_31_rows_backup():
+    """备用硬编码数据函数（原get_all_31_rows重命名）"""
     return [
         {"问题发现区域": "包装", "发现人": "谢佳", "问题收集": "码垛机器人旁边漏雨", "问题分类": "5S"},
         {"问题发现区域": "成品库、空柄库", "发现人": "谢佳", "问题收集": "成品库虚线还要有", "问题分类": "5S"},
@@ -203,7 +249,7 @@ def handle_circle_markers(slide, target_category):
     target_letter = category_mapping.get(target_category)
     
     if not target_letter:
-        print(f"    ⚠️  未知分类: {target_category}")
+        print(f"    警告: 未知分类: {target_category}")
         return
     
     print(f"    处理圆形标记: {target_category} -> {target_letter}")
@@ -220,13 +266,13 @@ def handle_circle_markers(slide, target_category):
             if text in ["A", "B", "C", "D", "E", "F", "G"]:
                 if text == target_letter:
                     # 这是目标圆圈，添加勾选标记
-                    shape.text_frame.text = "√"
+                    shape.text_frame.text = "V"
                     target_circle = shape
-                    print(f"      ✓ 在圆圈 {text} 中添加勾选")
+                    print(f"      [V] 在圆圈 {text} 中添加勾选")
                 else:
                     # 这是其他圆圈，标记为删除
                     circles_to_remove.append(shape)
-                    print(f"      ✗ 标记删除圆圈 {text}")
+                    print(f"      [X] 标记删除圆圈 {text}")
     
     # 删除未标记的圆圈
     for shape in circles_to_remove:
@@ -239,9 +285,9 @@ def handle_circle_markers(slide, target_category):
             print(f"      删除圆圈失败: {e}")
     
     if target_circle:
-        print(f"    ✓ 圆圈标记处理完成: {target_category}")
+        print(f"    [V] 圆圈标记处理完成: {target_category}")
     else:
-        print(f"    ⚠️  未找到目标圆圈: {target_letter}")
+        print(f"    [!] 未找到目标圆圈: {target_letter}")
 
 def extract_zip_and_find_files(zip_path):
     """解压ZIP文件并查找Excel和图片"""
@@ -323,9 +369,9 @@ def generate_ppt_with_user_files(ppt_file, zip_file, output_folder):
                     print(f"日期已更新: {text} -> {new_text}")
                     break
         
-        # 获取31行数据
-        data = get_all_31_rows()
-        print(f"准备处理 {len(data)} 行数据")
+        # 获取Excel数据（动态行数）
+        data = read_excel_data(excel_path)
+        print(f"从Excel读取到 {len(data)} 行数据，准备处理")
         
         # 获取模板幻灯片
         if len(prs.slides) < 2:
@@ -383,12 +429,12 @@ def generate_ppt_with_user_files(ppt_file, zip_file, output_folder):
                         width = Inches(3.5)
                         height = Inches(2.8)  # 完美高度
                         new_slide.shapes.add_picture(str(image_path), left, top, width, height)
-                        print(f"    ✓ 图片已添加: {image_path.name}")
+                        print(f"    [V] 图片已添加: {image_path.name}")
                         images_found += 1
                     except Exception as e:
-                        print(f"    ✗ 图片添加失败: {e}")
+                        print(f"    [X] 图片添加失败: {e}")
                 else:
-                    print(f"    ✗ 未找到匹配图片")
+                    print(f"    [X] 未找到匹配图片")
                 
                 created_count += 1
                 
@@ -406,7 +452,7 @@ def generate_ppt_with_user_files(ppt_file, zip_file, output_folder):
                 for slide_rel in list(prs.slides._sldIdLst):
                     if slide_rel.id == slide_id:
                         prs.slides._sldIdLst.remove(slide_rel)
-                        print("✓ 已删除原始第二页模板幻灯片")
+                        print("[V] 已删除原始第二页模板幻灯片")
                         break
                         
             except Exception as e:
@@ -424,22 +470,24 @@ def generate_ppt_with_user_files(ppt_file, zip_file, output_folder):
         if temp_dir.exists():
             shutil.rmtree(temp_dir)
         
-        print(f"\n🎉 图形界面版32页PPT生成成功!")
-        print(f"📁 文件: {output_name}")
-        print(f"📂 保存位置: {output_folder}")
-        print(f"📊 总页数: {len(prs.slides)} 页")
-        print(f"✅ 成功创建数据页: {created_count}/{len(data)} 页")
-        print(f"🖼️  成功添加图片: {images_found}/{len(data)} 页")
-        print(f"🗑️  原始模板页: 已删除")
+        print(f"\n[成功] 动态PPT生成成功!")
+        print(f"文件: {output_name}")
+        print(f"保存位置: {output_folder}")
+        print(f"总页数: {len(prs.slides)} 页")
+        print(f"Excel数据行数: {len(data)} 行")
+        print(f"[V] 成功创建数据页: {created_count}/{len(data)} 页")
+        print(f"成功添加图片: {images_found}/{len(data)} 页")
+        print(f"原始模板页: 已删除")
         
         # 显示完成对话框
         root = tk.Tk()
         root.withdraw()
-        messagebox.showinfo("生成完成!", 
+        messagebox.showinfo("生成完成!",
                            f"PPT生成成功!\n\n"
                            f"文件名: {output_name}\n"
                            f"保存位置: {output_folder}\n"
                            f"总页数: {len(prs.slides)} 页\n"
+                           f"Excel数据: {len(data)} 行\n"
                            f"数据页: {created_count} 页\n"
                            f"图片: {images_found} 张")
         root.destroy()
@@ -481,10 +529,10 @@ def main():
         output_file = generate_ppt_with_user_files(ppt_file, zip_file, output_folder)
         
         if output_file:
-            print("\n✅ 程序执行成功!")
+            print("\n[成功] 程序执行成功!")
             return 0
         else:
-            print("\n❌ 程序执行失败")
+            print("\n[失败] 程序执行失败")
             return 1
             
     except Exception as e:

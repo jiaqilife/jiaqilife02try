@@ -444,3 +444,5 @@
 2025-09-20 19:49:25,008 - INFO - 图片已添加到幻灯片: 成品库板台不能放太多.jpeg
 2025-09-20 19:49:25,008 - ERROR - 生成PPT时发生错误: Element is not a child of this node.
 2025-09-20 19:49:25,008 - ERROR - 程序执行失败: Element is not a child of this node.
+2025-09-21 11:39:02,344 - INFO - 验证文件路径...
+2025-09-21 11:39:02,344 - ERROR - 程序执行失败: PPT模板文件不存在: C:\Users\86151\Desktop\巡厂自动PPT\参观路线Gemba20250829.pptx
