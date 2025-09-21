@@ -10,8 +10,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 import re
-import tkinter as tk
-from tkinter import filedialog, messagebox
+# tkinter imports removed for web deployment compatibility
 
 # 导入库
 from pptx import Presentation
@@ -48,74 +47,44 @@ def save_config(config):
     except Exception as e:
         print(f"保存配置失败: {e}")
 
-def select_files():
-    """选择文件的图形界面"""
-    # 创建隐藏的主窗口
-    root = tk.Tk()
-    root.withdraw()
+def select_files_web_compatible(ppt_file=None, zip_file=None, output_folder=None):
+    """Web兼容的文件处理函数 - 不使用GUI对话框"""
+    print("Web模式：使用参数传递的文件路径")
     
-    # 加载配置
-    config = load_config()
-    
-    try:
-        # 选择PPT模板文件
-        messagebox.showinfo("文件选择", "请选择PPT模板文件")
-        ppt_file = filedialog.askopenfilename(
-            title="选择PPT模板文件",
-            initialdir=config.get("last_ppt_folder", ""),
-            filetypes=[("PowerPoint文件", "*.pptx"), ("所有文件", "*.*")]
-        )
-        
-        if not ppt_file:
-            messagebox.showerror("错误", "未选择PPT模板文件")
-            return None, None, None
-        
-        # 选择压缩包文件
-        messagebox.showinfo("文件选择", "请选择包含Excel数据和图片的ZIP压缩包")
-        zip_file = filedialog.askopenfilename(
-            title="选择ZIP压缩包",
-            initialdir=config.get("last_zip_folder", ""),
-            filetypes=[("ZIP文件", "*.zip"), ("所有文件", "*.*")]
-        )
-        
-        if not zip_file:
-            messagebox.showerror("错误", "未选择ZIP压缩包")
-            return None, None, None
-        
-        # 选择输出文件夹
-        messagebox.showinfo("文件选择", "请选择PPT输出保存位置")
-        output_folder = filedialog.askdirectory(
-            title="选择输出文件夹",
-            initialdir=config.get("last_ppt_folder", "")
-        )
-        
-        if not output_folder:
-            messagebox.showerror("错误", "未选择输出文件夹")
-            return None, None, None
-        
-        # 更新配置
-        config["last_ppt_folder"] = os.path.dirname(ppt_file)
-        config["last_zip_folder"] = os.path.dirname(zip_file)
-        config["last_ppt_file"] = ppt_file
-        config["last_zip_file"] = zip_file
-        
-        # 保存配置
-        save_config(config)
-        
-        # 显示选择结果
-        messagebox.showinfo("选择完成", 
-                           f"PPT模板: {os.path.basename(ppt_file)}\n"
-                           f"ZIP文件: {os.path.basename(zip_file)}\n"
-                           f"输出位置: {output_folder}\n\n"
-                           f"点击确定开始生成PPT...")
-        
-        root.destroy()
-        return ppt_file, zip_file, output_folder
-        
-    except Exception as e:
-        messagebox.showerror("错误", f"文件选择过程中发生错误: {e}")
-        root.destroy()
+    # 检查必需的文件参数
+    if not ppt_file:
+        print("错误: 未提供PPT模板文件路径")
         return None, None, None
+        
+    if not zip_file:
+        print("错误: 未提供ZIP压缩包文件路径")
+        return None, None, None
+        
+    if not output_folder:
+        output_folder = "."  # 默认使用当前目录
+        print("使用默认输出文件夹: 当前目录")
+    
+    # 验证文件存在性
+    if not os.path.exists(ppt_file):
+        print(f"错误: PPT模板文件不存在: {ppt_file}")
+        return None, None, None
+        
+    if not os.path.exists(zip_file):
+        print(f"错误: ZIP文件不存在: {zip_file}")
+        return None, None, None
+    
+    print(f"文件验证成功:")
+    print(f"PPT模板: {os.path.basename(ppt_file)}")
+    print(f"ZIP文件: {os.path.basename(zip_file)}")
+    print(f"输出位置: {output_folder}")
+    
+    return ppt_file, zip_file, output_folder
+
+# 保持原函数名但重定向到新的Web兼容版本
+def select_files():
+    """向后兼容的包装函数"""
+    print("警告: 原GUI版本已禁用，请使用Web界面或直接调用generate_ppt_with_user_files")
+    return None, None, None
 
 def read_excel_data(excel_path):
     """从Excel文件动态读取数据，替代硬编码数据"""
@@ -479,18 +448,15 @@ def generate_ppt_with_user_files(ppt_file, zip_file, output_folder):
         print(f"成功添加图片: {images_found}/{len(data)} 页")
         print(f"原始模板页: 已删除")
         
-        # 显示完成对话框
-        root = tk.Tk()
-        root.withdraw()
-        messagebox.showinfo("生成完成!",
-                           f"PPT生成成功!\n\n"
-                           f"文件名: {output_name}\n"
-                           f"保存位置: {output_folder}\n"
-                           f"总页数: {len(prs.slides)} 页\n"
-                           f"Excel数据: {len(data)} 行\n"
-                           f"数据页: {created_count} 页\n"
-                           f"图片: {images_found} 张")
-        root.destroy()
+        # 显示完成信息（Web兼容版本）
+        print("\n=== PPT生成完成 ===")
+        print(f"文件名: {output_name}")
+        print(f"保存位置: {output_folder}")
+        print(f"总页数: {len(prs.slides)} 页")
+        print(f"Excel数据: {len(data)} 行")
+        print(f"数据页: {created_count} 页")
+        print(f"图片: {images_found} 张")
+        print("==================")
         
         return str(output_path)
         
@@ -499,11 +465,10 @@ def generate_ppt_with_user_files(ppt_file, zip_file, output_folder):
         import traceback
         traceback.print_exc()
         
-        # 显示错误对话框
-        root = tk.Tk()
-        root.withdraw()
-        messagebox.showerror("生成失败", f"PPT生成失败:\n{e}")
-        root.destroy()
+        # 显示错误信息（Web兼容版本）
+        print(f"\n=== PPT生成失败 ===")
+        print(f"错误信息: {e}")
+        print("==================")
         
         return None
 
